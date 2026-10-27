@@ -1,0 +1,280 @@
+[
+  {
+    "rule": {
+      "id": "WEB-1001",
+      "name": "SQL Injection Attempt",
+      "severity": "high",
+      "risk_score": 73,
+      "logic": "Detect SQL injection patterns in HTTP query parameters."
+    },
+    "event": {
+      "@timestamp": "2026-10-27T07:10:00Z",
+      "event.category": ["web"],
+      "event.type": ["indicator"],
+      "event.severity": 73,
+      "source.ip": "192.168.1.50",
+      "destination.ip": "10.0.0.20",
+      "http.request.method": "GET",
+      "url.path": "/products",
+      "url.query": "id=1%27%20OR%201%3D1--",
+      "http.response.status_code": 500,
+      "event.outcome": "failure"
+    },
+    "evidence": {
+      "matched_pattern": "OR 1=1",
+      "reason": "SQL-like boolean expression in a request parameter.",
+      "confidence": "medium"
+    }
+  },
+  {
+    "rule": {
+      "id": "WEB-1002",
+      "name": "Cross-Site Scripting Attempt",
+      "severity": "medium",
+      "risk_score": 47,
+      "logic": "Detect script tags or JavaScript execution schemes in HTTP parameters."
+    },
+    "event": {
+      "@timestamp": "2026-10-27T07:12:00Z",
+      "event.category": ["web"],
+      "event.type": ["indicator"],
+      "event.severity": 47,
+      "source.ip": "192.168.1.51",
+      "destination.ip": "10.0.0.20",
+      "http.request.method": "GET",
+      "url.path": "/search",
+      "url.query": "q=%3Cscript%3Ealert(1)%3C%2Fscript%3E",
+      "http.response.status_code": 200,
+      "event.outcome": "success"
+    },
+    "evidence": {
+      "matched_pattern": "<script>",
+      "reason": "Script markup appears in user-controlled input.",
+      "confidence": "medium"
+    }
+  },
+  {
+    "rule": {
+      "id": "WEB-1003",
+      "name": "Path Traversal Attempt",
+      "severity": "high",
+      "risk_score": 73,
+      "logic": "Detect traversal sequences in file-related URL parameters after URL decoding."
+    },
+    "event": {
+      "@timestamp": "2026-10-27T07:14:00Z",
+      "event.category": ["web"],
+      "event.type": ["indicator"],
+      "event.severity": 73,
+      "source.ip": "192.168.1.52",
+      "destination.ip": "10.0.0.20",
+      "http.request.method": "GET",
+      "url.path": "/download",
+      "url.query": "file=../../../../etc/passwd",
+      "http.response.status_code": 403,
+      "event.outcome": "failure"
+    },
+    "evidence": {
+      "matched_pattern": "../",
+      "reason": "Repeated parent-directory traversal in a file parameter.",
+      "confidence": "high"
+    }
+  },
+  {
+    "rule": {
+      "id": "WEB-1004",
+      "name": "Local File Inclusion Attempt",
+      "severity": "high",
+      "risk_score": 73,
+      "logic": "Detect requests attempting to include sensitive local filesystem paths."
+    },
+    "event": {
+      "@timestamp": "2026-10-27T07:16:00Z",
+      "event.category": ["web"],
+      "event.type": ["indicator"],
+      "event.severity": 73,
+      "source.ip": "192.168.1.53",
+      "destination.ip": "10.0.0.20",
+      "http.request.method": "GET",
+      "url.path": "/page",
+      "url.query": "template=/etc/passwd",
+      "http.response.status_code": 400,
+      "event.outcome": "failure"
+    },
+    "evidence": {
+      "matched_pattern": "/etc/passwd",
+      "reason": "Sensitive local file path supplied as a template parameter.",
+      "confidence": "high"
+    }
+  },
+  {
+    "rule": {
+      "id": "WEB-1005",
+      "name": "Server-Side Request Forgery Attempt",
+      "severity": "high",
+      "risk_score": 73,
+      "logic": "Detect user-controlled URLs targeting loopback, private networks, or cloud metadata endpoints."
+    },
+    "event": {
+      "@timestamp": "2026-10-27T07:18:00Z",
+      "event.category": ["web"],
+      "event.type": ["indicator"],
+      "event.severity": 73,
+      "source.ip": "192.168.1.54",
+      "destination.ip": "10.0.0.20",
+      "http.request.method": "POST",
+      "url.path": "/fetch",
+      "http.request.body.content": "{\"url\":\"http://127.0.0.1:8080/admin\"}",
+      "http.response.status_code": 403,
+      "event.outcome": "failure"
+    },
+    "evidence": {
+      "matched_pattern": "127.0.0.1",
+      "reason": "User-controlled URL references a loopback service.",
+      "confidence": "medium"
+    }
+  },
+  {
+    "rule": {
+      "id": "WEB-1006",
+      "name": "Web Login Brute Force",
+      "severity": "high",
+      "risk_score": 73,
+      "logic": "Trigger when one source IP produces at least 20 failed login attempts within 5 minutes."
+    },
+    "event": {
+      "@timestamp": "2026-10-27T07:20:00Z",
+      "event.category": ["authentication"],
+      "event.type": ["denied"],
+      "event.severity": 73,
+      "source.ip": "192.168.1.55",
+      "destination.ip": "10.0.0.20",
+      "http.request.method": "POST",
+      "url.path": "/login",
+      "http.response.status_code": 401,
+      "event.outcome": "failure",
+      "user.name": "testuser",
+      "failed_attempts": 24,
+      "window_minutes": 5
+    },
+    "evidence": {
+      "failed_attempts": 24,
+      "threshold": 20,
+      "reason": "Failed authentication threshold exceeded.",
+      "confidence": "high"
+    }
+  },
+  {
+    "rule": {
+      "id": "WEB-1007",
+      "name": "Web Directory Brute Force",
+      "severity": "medium",
+      "risk_score": 47,
+      "logic": "Detect one source requesting at least 50 distinct paths within 60 seconds."
+    },
+    "event": {
+      "@timestamp": "2026-10-27T07:22:00Z",
+      "event.category": ["web"],
+      "event.type": ["indicator"],
+      "event.severity": 47,
+      "source.ip": "192.168.1.56",
+      "destination.ip": "10.0.0.20",
+      "http.request.method": "GET",
+      "url.path": "/.env",
+      "http.response.status_code": 404,
+      "event.outcome": "failure",
+      "distinct_paths": 67,
+      "window_seconds": 60
+    },
+    "evidence": {
+      "distinct_paths": 67,
+      "threshold": 50,
+      "reason": "High-rate requests to numerous distinct paths.",
+      "confidence": "high"
+    }
+  },
+  {
+    "rule": {
+      "id": "WEB-1008",
+      "name": "OS Command Injection Attempt",
+      "severity": "critical",
+      "risk_score": 95,
+      "logic": "Detect shell command separators and suspicious operating-system commands in user-controlled parameters."
+    },
+    "event": {
+      "@timestamp": "2026-10-27T07:24:00Z",
+      "event.category": ["web"],
+      "event.type": ["indicator"],
+      "event.severity": 95,
+      "source.ip": "192.168.1.57",
+      "destination.ip": "10.0.0.20",
+      "http.request.method": "GET",
+      "url.path": "/diagnostics",
+      "url.query": "host=localhost%3B%20id",
+      "http.response.status_code": 400,
+      "event.outcome": "failure"
+    },
+    "evidence": {
+      "matched_pattern": "; id",
+      "reason": "Command separator followed by a suspicious shell command.",
+      "confidence": "medium"
+    }
+  },
+  {
+    "rule": {
+      "id": "WEB-1009",
+      "name": "Suspicious Executable File Upload",
+      "severity": "high",
+      "risk_score": 73,
+      "logic": "Detect executable file extensions or content inconsistent with the permitted upload policy."
+    },
+    "event": {
+      "@timestamp": "2026-10-27T07:26:00Z",
+      "event.category": ["web"],
+      "event.type": ["indicator"],
+      "event.severity": 73,
+      "source.ip": "192.168.1.58",
+      "destination.ip": "10.0.0.20",
+      "http.request.method": "POST",
+      "url.path": "/upload",
+      "file.name": "payload.php",
+      "file.extension": "php",
+      "http.response.status_code": 403,
+      "event.outcome": "failure"
+    },
+    "evidence": {
+      "file_extension": "php",
+      "reason": "Executable extension submitted to a restricted upload endpoint.",
+      "confidence": "medium"
+    }
+  },
+  {
+    "rule": {
+      "id": "WEB-1010",
+      "name": "HTTP Authentication Bypass Indicator",
+      "severity": "high",
+      "risk_score": 73,
+      "logic": "Detect access to protected administrative endpoints without an authenticated session or expected authorization context."
+    },
+    "event": {
+      "@timestamp": "2026-10-27T07:28:00Z",
+      "event.category": ["web", "authentication"],
+      "event.type": ["access"],
+      "event.severity": 73,
+      "source.ip": "192.168.1.59",
+      "destination.ip": "10.0.0.20",
+      "http.request.method": "GET",
+      "url.path": "/admin/users",
+      "http.response.status_code": 200,
+      "user.name": "anonymous",
+      "user.roles": [],
+      "event.outcome": "success"
+    },
+    "evidence": {
+      "endpoint": "/admin/users",
+      "authenticated": false,
+      "reason": "An anonymous request apparently received a successful response from a protected endpoint.",
+      "confidence": "high"
+    }
+  }
+]
