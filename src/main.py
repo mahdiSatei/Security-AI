@@ -38,7 +38,11 @@ def main():
 
     # ۴. تست جستجوی معنایی با فیلتر شدت (فقط هشدارهای high)
     q2 = "brute force login password attempts"
-    res2 = vstore.search(query=q2, n_results=3, severity_filter="high")
+    res2 = vstore.search(
+        query=q2,
+        n_results=3,
+        filters={"severity": "high", "source_ip": "192.168.1.50"}
+    )
     display_results(f"جستجو: '{q2}' (فیلتر: Severity=high)", res2)
 
 
